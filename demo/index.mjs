@@ -59,16 +59,13 @@ class Executor {
 
     run(gas) {
         this.#gas += gas
-        if (this.#gas <= 0)
-            return false
+        if (this.#gas <= 0) return false
 
-        if (this.#paused) {
-            this.#exports.asyncify_start_rewind(DATA_ADDR) //start stack rewinding
-        }
+        if (this.#paused) this.#exports.asyncify_start_rewind(DATA_ADDR) //start stack rewinding
 
         this.#exports.entry() //resume execution
-        if (this.#paused)
-            this.#exports.asyncify_stop_unwind() //stop stack unwinding
+
+        if (this.#paused) this.#exports.asyncify_stop_unwind() //stop stack unwinding
 
         return !this.#paused //return true if execution finished
     }
