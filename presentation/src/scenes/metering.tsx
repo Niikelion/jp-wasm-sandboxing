@@ -21,7 +21,6 @@ class Executor {
         
         this.#instance = new WebAssembly.Instance(compiledModule, {
             env: {
-                print: console.log,
                 memory: this.#memory,
                 ...(env??{})
             }
@@ -45,41 +44,17 @@ const gasSource = `,
 const unMeteredWatSource = `\
  (func $entry
   (local $0 i32)
-  global.get $__stack_pointer
-  i32.const 16
-  i32.sub
-  local.tee $0
-  global.set $__stack_pointer
-  local.get $0
-  i32.const 0
-  i32.store offset=12
-  block $label$1
-   loop $label$2
-    local.get $0
-    i32.load offset=12
-    i32.const 20
-    i32.lt_s
-    i32.const 1
-    i32.and
-    i32.eqz
-    br_if $label$1
-    local.get $0
-    i32.load offset=12
-    call $print
-    local.get $0
-    local.get $0
-    i32.load offset=12
-    i32.const 1
-    i32.add
-    i32.store offset=12
-    br $label$2
-   end
-   unreachable
-  end
-  local.get $0
-  i32.const 16
-  i32.add
-  global.set $__stack_pointer
+  (global.set $__stack_pointer (local.tee $0 (i32.sub (global.get $__stack_pointer) (i32.const 16))))
+  (i32.store offset=12 (local.get $0) (i32.const 0))
+  (block $label$1
+   (loop $label$2
+    (br_if $label$1 (i32.eqz (i32.and (i32.lt_s (i32.load offset=12 (local.get $0)) (i32.const 20)) (i32.const 1))))
+    (call $print (i32.load offset=12 (local.get $0)))
+    (i32.store offset=12 (local.get $0) (i32.add (i32.load offset=12 (local.get $0)) (i32.const 1)))
+    (br $label$2)
+   )
+  )
+  (global.set $__stack_pointer (i32.add (local.get $0) (i32.const 16)))
  )`
 
 export default makeSlide(titleSlide({
@@ -107,31 +82,25 @@ export default makeSlide(titleSlide({
         yield* beginSlide("add_gas_function")
         yield* all(
             code().code.insert([13, 8], "const that = this\n        ", 0.2),
-            code().code.insert([18, 13], gasSource, 0.2)
+            code().code.insert([17, 13], gasSource, 0.2),
+            code().selection([word(3, 39, 52), lines(19, 24)], 0.2)
         )
-        yield* beginSlide("highlight")
-        yield* code().selection([word(3, 39, 52), lines(20, 25)], 0.2)
         yield* beginSlide("un_metered")
         yield* all(
-            code().fontSize(16, 0.2),
             code().code.replace(lines(0, 100), unMeteredWatSource, 0.2),
             code().selection([lines(0, 100)], 0.2)
         )
         yield* beginSlide("metered")
         yield* all(
-            code().fontSize(13.5, 0.2),
-            code().code.insert([2,0], "  i32.const 740\n  call $__wasm_call_ctors\n", 0.2),
-            code().code.insert([12, 0], "    i32.const 558\n    call $__wasm_call_ctors\n", 0.2),
-            code().code.insert([20, 0], "    i32.const 1037\n    call $__wasm_call_ctors\n", 0.2),
-            code().code.insert([33, 0], "  i32.const 377\n  call $__wasm_call_ctors\n", 0.2)
-        )
-        yield* beginSlide("show changes")
-        yield* all(
+            code().code.insert([2,0], "  (call $__wasm_call_ctors (i32.const 740))\n", 0.2),
+            code().code.insert([6, 0], "    (call $__wasm_call_ctors (i32.const 558))\n", 0.2),
+            code().code.insert([7, 0], "    (call $__wasm_call_ctors (i32.const 1037))\n", 0.2),
+            code().code.insert([12, 0], "  (call $__wasm_call_ctors (i32.const 377))\n", 0.2),
             code().selection([
-                lines(2, 3),
-                lines(14, 15),
-                lines(24, 25),
-                lines(39, 40)
+                lines(2),
+                lines(7),
+                lines(9),
+                lines(14, 15)
             ], 0.2)
         )
     }

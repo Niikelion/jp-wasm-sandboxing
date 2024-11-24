@@ -9,6 +9,7 @@ import {
 } from '@motion-canvas/2d';
 import {parser as java} from '@lezer/java';
 import {parser as js} from '@lezer/javascript';
+import {parser as cpp} from '@lezer/cpp';
 import {map} from "@motion-canvas/core";
 
 const KEYWORD = '#ff5d62';
@@ -143,4 +144,8 @@ export const CsCode = withDefaults(Code, {
 export const JsCode = withDefaults(Code, {
     highlighter: new LezerHighlighter(js.configure({ dialect: "mjs" })),
     ...Defaults
+})
+
+export const CCode = withDefaults(Code, {
+    highlighter: new LezerHighlighter(cpp.configure({}))
 })

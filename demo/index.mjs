@@ -16,10 +16,7 @@ class Executor {
         const ir = binaryen.readBinary(metering.meterWASM(wasmBinary, {
             meterType: `i32`
         }))
-        console.log(binaryen.readBinary(wasmBinary).emitText())
-        console.log(ir.emitText())
         ir.runPasses([`asyncify`])
-
         const compiledModule = new WebAssembly.Module(ir.emitBinary())
         const memoryInfo = ir.getMemoryInfo()
         const that = this
@@ -32,7 +29,6 @@ class Executor {
 
         this.#instance = new WebAssembly.Instance(compiledModule, {
             env: {
-                print: console.log,
                 memory: this.#memory,
                 ...(env??{})
             },
@@ -43,10 +39,10 @@ class Executor {
                         if (that.#gas <= 0) {
                             // Fill in the data structure. The first value has the stack location,
                             // which for simplicity we can start right after the data structure itself.
-                            that.#memoryView[DATA_ADDR >> 2] = DATA_ADDR + 8;
+                            that.#memoryView[DATA_ADDR >> 2] = DATA_ADDR + 8
                             // The end of the stack will not be reached here anyhow.
-                            that.#memoryView[DATA_ADDR + 4 >> 2] = 1024;
-                            that.#exports.asyncify_start_unwind(DATA_ADDR);
+                            that.#memoryView[DATA_ADDR + 4 >> 2] = 1024
+                            that.#exports.asyncify_start_unwind(DATA_ADDR)
                             that.#paused = true;
                         }
                     } else {
@@ -70,28 +66,49 @@ class Executor {
             this.#exports.asyncify_start_rewind(DATA_ADDR) //start stack rewinding
         }
 
-        //resume execution
-        this.#exports.entry()
+        this.#exports.entry() //resume execution
         if (this.#paused)
             this.#exports.asyncify_stop_unwind() //stop stack unwinding
 
-        //return true if execution finished
-        return !this.#paused;
+        return !this.#paused //return true if execution finished
     }
+    serializeMemory() {
+        return this.#paused ? new Int32Array(this.#memoryView) : undefined
+    }
+    deserializeMemory(data) {
+        this.#paused = true
+        const newData = Int32Array.from(data)
 
-    getMemoryView() {
-        return this.#memoryView
+        if (newData.length !== this.#memoryView.length)
+            throw new Error("Memory size mismatch!")
+
+        for (let i=0; i<newData.length; ++i)
+            this.#memoryView[i] = newData[i]
     }
+}
+
+const wasm = fs.readFileSync('./example.wasm')
+const env = {
+    print: console.log
 }
 
 const cpuLimit = 10000
 const memLimit = 65536
-const instance = new Executor(fs.readFileSync('./example.wasm'), memLimit, {})
+const instance = new Executor(wasm, memLimit, env)
+
+console.log("Running first instance")
+instance.run(cpuLimit)
+console.log("First instance paused")
+
+console.log("Creating new instance and moving serialized state")
+const data = instance.serializeMemory()
+const newInstance = new Executor(wasm, memLimit, env)
+newInstance.deserializeMemory(data)
 
 let stopped = false
-console.log("Starting execution")
+console.log("Running second instance from first instance memory snapshot")
 do {
-    stopped = instance.run(cpuLimit)
+    stopped = newInstance.run(cpuLimit)
     console.log("Execution paused, performing tick")
 } while (!stopped)
 console.log("Finished execution")

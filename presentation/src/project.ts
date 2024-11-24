@@ -7,6 +7,9 @@ import problem from "./scenes/problem?scene"
 import rescue from "./scenes/rescue?scene"
 import base from "./scenes/base?scene"
 import metering from "./scenes/metering?scene"
+import unwindRewind from "./scenes/unwindRewind?scene"
+import serialization from "./scenes/serialization?scene"
+import example from "./scenes/example?scene"
 import sources from "./scenes/sources?scene"
 import end from "./scenes/end?scene"
 
@@ -18,6 +21,9 @@ const scenes = [
     rescue,
     base,
     metering,
+    unwindRewind,
+    serialization,
+    example,
     sources,
     end
 ]

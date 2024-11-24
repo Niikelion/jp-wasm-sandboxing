@@ -31,7 +31,6 @@ const constructorSource = `
         
         this.#instance = new WebAssembly.Instance(compiledModule, {
             env: {
-                print: console.log,
                 memory: this.#memory,
                 ...(env??{})
             }
