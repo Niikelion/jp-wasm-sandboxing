@@ -1,0 +1,12 @@
+{
+  "name": "demo",
+  "main": "index.mjs",
+  "packageManager": "yarn@4.5.2",
+  "dependencies": {
+    "binaryen": "^120.0.0",
+    "wasm-metering": "^0.2.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}
