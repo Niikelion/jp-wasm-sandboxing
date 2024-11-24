@@ -10,7 +10,8 @@ export default makeSlide(titleSlide({
         const points = [
             "Ignoring the problem",
             "Separate threads",
-            "Separate processes"
+            "Separate processes",
+            "Docker(aka. separate processes)"
         ]
 
         root.add(<Layout>{() => <BulletPoints
