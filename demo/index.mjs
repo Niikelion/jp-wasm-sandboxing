@@ -10,19 +10,19 @@ class Executor {
     #instance
     #exports
     #memory
+    #memoryView
 
-    constructor(wasmBinary, memoryLimit) {
+    constructor(wasmBinary, memoryLimit, env) {
         const ir = binaryen.readBinary(metering.meterWASM(wasmBinary, {
             meterType: `i32`
         }))
+        console.log(binaryen.readBinary(wasmBinary).emitText())
+        console.log(ir.emitText())
         ir.runPasses([`asyncify`])
 
-        const transformedWasmBinary = ir.emitBinary()
-        const compiledModule = new WebAssembly.Module(transformedWasmBinary)
-
-        const that = this
-
+        const compiledModule = new WebAssembly.Module(ir.emitBinary())
         const memoryInfo = ir.getMemoryInfo()
+        const that = this
 
         this.#memory = new WebAssembly.Memory({
             initial: memoryInfo.initial,
@@ -33,7 +33,8 @@ class Executor {
         this.#instance = new WebAssembly.Instance(compiledModule, {
             env: {
                 print: console.log,
-                memory: this.#memory
+                memory: this.#memory,
+                ...(env??{})
             },
             metering: {
                 usegas(gas) {
@@ -42,9 +43,9 @@ class Executor {
                         if (that.#gas <= 0) {
                             // Fill in the data structure. The first value has the stack location,
                             // which for simplicity we can start right after the data structure itself.
-                            view[DATA_ADDR >> 2] = DATA_ADDR + 8;
+                            that.#memoryView[DATA_ADDR >> 2] = DATA_ADDR + 8;
                             // The end of the stack will not be reached here anyhow.
-                            view[DATA_ADDR + 4 >> 2] = 1024;
+                            that.#memoryView[DATA_ADDR + 4 >> 2] = 1024;
                             that.#exports.asyncify_start_unwind(DATA_ADDR);
                             that.#paused = true;
                         }
@@ -57,7 +58,7 @@ class Executor {
         })
 
         this.#exports = this.#instance.exports
-        const view = new Int32Array(this.#memory.buffer)
+        this.#memoryView = new Int32Array(this.#memory.buffer)
     }
 
     run(gas) {
@@ -77,13 +78,15 @@ class Executor {
         //return true if execution finished
         return !this.#paused;
     }
-}
 
-binaryen.setOptimizeLevel(3);
+    getMemoryView() {
+        return this.#memoryView
+    }
+}
 
 const cpuLimit = 10000
 const memLimit = 65536
-const instance = new Executor(fs.readFileSync('./example.wasm'), memLimit)
+const instance = new Executor(fs.readFileSync('./example.wasm'), memLimit, {})
 
 let stopped = false
 console.log("Starting execution")

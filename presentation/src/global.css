@@ -1,0 +1,6 @@
+@font-face {
+    font-family: 'Montserrat';
+    src:
+            local('Cascadia Code'),
+            url(public/fonts/Montserrat.ttf) format('truetype');
+}
