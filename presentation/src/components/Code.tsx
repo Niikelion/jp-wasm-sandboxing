@@ -82,6 +82,12 @@ class CsharpHighlighter extends LezerHighlighter {
         const node = cache.tree.resolveInner(index, 1);
         const code = cache.code.slice(node.from, node.to);
 
+        if (node._parent?.type?.name === "TypeParameter")
+        {
+            value.color = CLASS
+            return value
+        }
+
         switch (code) {
             case 'Resolve':
             case 'Get':
